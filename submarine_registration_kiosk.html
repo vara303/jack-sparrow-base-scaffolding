@@ -6,19 +6,12 @@
     Mandatory usages indicated are: Backbone.js for UI and PubNub for
     message communications.
 
-    This file opens up Jack Sparrow's console.
-    Features he has:
-    1. Can input a submarine name and register to the list
-    2. Once registered, the submarine is displayed in the table as row
-    3. Jack can click on Hide button. This will send a pubnub message to
-    the "HIDE" channel of pubnub
-    4. Sub once registered, can start listening on the "HIDE" channel
-    5. If "HIDE" is received, sub will send acknowledge message to "HIDE_ACK"
-    6. Jack again listens on HIDE_ACK, and the backbone js code will mark the table 
-    row to say that the sub has gone into hiding
-    7. Also, Jack can remove any sub totally from the list
-    8. When any Sub goes into MAINTENANCE mode by sending a msg to pubnub MAINT_QUEUE,
-    Jack listens and removes it from the list.    
+    This file has facility for Submarines to
+    1. Register with Jack
+    2. Receive HIDE/UNHIDE signals on the pubnub channel
+    3. Send ACK to Jack
+    4. Go into Maintenance mode which is equivalent to removal from list
+       
 -->
 <html lang="en">
 <head>
@@ -84,7 +77,8 @@ var SubmarineRow = Backbone.View.extend({
     },
     render: function() {
         //console.log("JSON= "+this.model);
-        this.$el.append(this.template(this.model.toJSON()));
+        //Replaces the row, unlike Jack's page, as this is for single use
+        this.$el.html(this.template(this.model.toJSON()));
     }
 });
 
