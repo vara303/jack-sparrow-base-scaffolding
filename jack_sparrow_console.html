@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="'UTF-8">
+    <title>Jack Sparrow Cockpit</title>    
+</head>
+<body>
+    <div class="container">
+    <h1>Jack Sparrow's Cockpit</h1>
+    <form class="">
+        <div class="form-group">
+          <label >Submarine Name</label>
+          <input type="name" class="form-control sub-name-input" placeholder="Submarine name">
+          <small class="form-text text-muted">Enter the submarine name to register.</small>
+        </div>
+        <button onclick="return false;" class="btn btn-primary sub-add">Click to Register the Submarine</button>
+      </form>
+    <table class="table" id="sub-list-table">
+        <thead>
+            <tr>
+                <th>Submarine Name</th>
+                <th>Current Status</th>
+                <th>Signal to Hide/ Unhide</th>
+                <th>Submarine Ack Status</th>
+            </tr>
+        </thead>
+        <tbody id="sub-row"> </tbody>
+    </table>
+</div>
+  
+<script type="text/template" id="sub-template">
+    <tr><td><span id="sub-name"><%= name %></span></td>
+    <td><span id="sub-status">status</span></td>
+    <td><button onclick="hide('<%=name%>');" class="btn btn-warning rrr" id="sub-go-hide"> Go Hide! </button>
+        <button onclick="return false;" class="btn btn-danger" id="sub-remove">Remove from List</button></td>
+    <td><span id="sub-ackStatus">ackStatus</span></td></tr>
+</script> 
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+<script type="text/javascript" src="https://underscorejs.org/underscore-umd-min.js"></script>
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="https://backbonejs.org/backbone-min.js"></script>
+<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.4.5.min.js"></script>
+<script type="text/javascript">
+
+var Submarine = Backbone.Model.extend({
+    defaults: {
+        name: 'DEFAULT',
+        status: 'DEFAULT',
+        signal:'DEFAULT',
+        ackStatus: 'DEFAULT'
+    }
+});
+
+var SubmarineRow = Backbone.View.extend({
+    model: new Submarine(),
+    template: _.template($('#sub-template').html()),
+    initialize: function() {
+        this.render();
+    },
+    render: function() {
+        //console.log("JSON= "+this.model);
+        this.$el.append(this.template(this.model.toJSON()));
+    }
+});
+
+$(document).ready(function() {
+    $('.sub-add').on('click', function() {
+        //On form submission, create a Submarine
+        var sub = new Submarine({
+            name: $('.sub-name-input').val()
+        });
+        //Generate Row in UI
+        var submarineRow = new SubmarineRow({el:$("#sub-row"), model:sub});
+    });
+});
+
+function hide(submarine_name) {
+    console.log("hide message for: " + submarine_name)
+    //Send hide message to PubNub, so that Ships can pick up the message
+    //TODO
+    publishMessage("SIGNAL FROM JACK TO HIDE _ FOR: " + submarine_name);
+    return false;
+};
+
+const showMessage = (msg) => {
+    var message = document.createElement('div');
+    message.innerText = msg;
+    document.getElementById('messages').appendChild(message);
+};
+
+let pubnub;
+
+const setupPubNub = () => {
+    // Update this block with your publish/subscribe keys
+    pubnub = new PubNub({
+        publishKey: 'demo',
+        subscribeKey: 'demo',
+        userId: 'demo'
+        });
+
+    // add listener
+    const listener = {
+        status: (statusEvent) => {
+            if (statusEvent.category === "PNConnectedCategory") {
+                console.log("Connected to PubNub");
+            }
+        },
+        message: (messageEvent) => {
+            showMessage(messageEvent.message.description);
+        },
+        presence: (presenceEvent) => {
+            // handle presence
+        }
+    };
+    pubnub.addListener(listener);
+
+    // subscribe to a channel
+    pubnub.subscribe({
+        channels: ["hello_world"]
+    });
+};
+
+// run after page is loaded
+window.onload = setupPubNub;
+
+// publish message
+const publishMessage = async (message) => {
+    // With the right payload, you can publish a message, add a reaction to a message,
+    // send a push notification, or send a small payload called a signal.
+    const publishPayload = {
+        channel : "hello_world",
+        message: {
+            title: "greeting",
+            description: message
+        }
+    };
+    await pubnub.publish(publishPayload);
+}
+
+</script>
+
+</body>
+
+</html>
